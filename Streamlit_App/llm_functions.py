@@ -1,14 +1,10 @@
+import os
+
 import streamlit as st
-
-# LLM: openai
-from langchain_openai import ChatOpenAI
-
-# LLM: google_genai
-from langchain_google_genai import ChatGoogleGenerativeAI
-
 # dotenv and os
 from dotenv import load_dotenv, find_dotenv
-import os
+# LLM: openai
+from langchain_openai import ChatOpenAI
 
 
 def get_api_keys_from_local_env():
@@ -21,21 +17,25 @@ def get_api_keys_from_local_env():
         except:
             openai_api_key = ""
         try:
-            google_api_key = os.getenv("api_key_google")
+            zhipu_api_key = os.getenv("api_key_zhipu")
         except:
-            google_api_key = ""
+            zhipu_api_key = ""
         try:
-            cohere_api_key = os.getenv("api_key_cohere")
+            qwen_api_key = os.getenv("api_key_qwen")
         except:
-            cohere_api_key = ""
+            qwen_api_key = ""
+        try:
+            deepseek_api_key = os.getenv("api_key_deepseek")
+        except:
+            deepseek_api_key = ""
     except Exception as e:
         print(e)
 
-    return openai_api_key, google_api_key, cohere_api_key
+    return openai_api_key, zhipu_api_key, qwen_api_key, deepseek_api_key
 
 
 def instantiate_LLM(
-    LLM_provider, api_key, temperature=0.5, top_p=0.95, model_name=None
+        LLM_provider, api_key, temperature=0.5, top_p=0.95, model_name=None
 ):
     """Instantiate LLM in Langchain.
     Parameters:
@@ -52,14 +52,29 @@ def instantiate_LLM(
             temperature=temperature,
             model_kwargs={"top_p": top_p},
         )
-    if LLM_provider == "Google":
-        llm = ChatGoogleGenerativeAI(
-            google_api_key=api_key,
-            # model="gemini-pro",
+    if LLM_provider == "ZhiPu":
+        llm = ChatOpenAI(
+            api_key=api_key,
             model=model_name,
+            base_url="https://open.bigmodel.cn/api/paas/v4/",
             temperature=temperature,
-            top_p=top_p,
-            convert_system_message_to_human=True,
+            model_kwargs={"top_p": top_p},
+        )
+    if LLM_provider == "Qwen":
+        llm = ChatOpenAI(
+            api_key=api_key,
+            model=model_name,
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            temperature=temperature,
+            model_kwargs={"top_p": top_p},
+        )
+    if LLM_provider == "DeepSeek":
+        llm = ChatOpenAI(
+            api_key=api_key,
+            model=model_name,
+            base_url="https://api.deepseek.com/v1",
+            temperature=temperature,
+            model_kwargs={"top_p": top_p},
         )
 
     return llm
@@ -67,19 +82,40 @@ def instantiate_LLM(
 
 def instantiate_LLM_main(temperature, top_p):
     """Instantiate the selected LLM model."""
+    print(f"Selected LLM provider: {st.session_state.LLM_provider}")
+    print(f"Selected model: {st.session_state.selected_model}")
+    print(f"API Key: {st.session_state.api_key}")
     try:
         if st.session_state.LLM_provider == "OpenAI":
             llm = instantiate_LLM(
                 "OpenAI",
-                api_key=st.session_state.openai_api_key,
+                api_key=st.session_state.api_key,
+                # api_key="sk-9cc8d47328e04d98a7ca430505b6a59c",
+                temperature=temperature,
+                top_p=top_p,
+                model_name=st.session_state.selected_model,
+                # model_name="qwen-turbo",
+            )
+        elif st.session_state.LLM_provider == "ZhiPu":
+            llm = instantiate_LLM(
+                "ZhiPu",
+                api_key=st.session_state.api_key,
                 temperature=temperature,
                 top_p=top_p,
                 model_name=st.session_state.selected_model,
             )
-        else:
+        elif st.session_state.LLM_provider == "Qwen":
             llm = instantiate_LLM(
-                "Google",
-                api_key=st.session_state.google_api_key,
+                "Qwen",
+                api_key=st.session_state.api_key,
+                temperature=temperature,
+                top_p=top_p,
+                model_name=st.session_state.selected_model,
+            )
+        elif st.session_state.LLM_provider == "DeepSeek":
+            llm = instantiate_LLM(
+                "DeepSeek",
+                api_key=st.session_state.api_key,
                 temperature=temperature,
                 top_p=top_p,
                 model_name=st.session_state.selected_model,

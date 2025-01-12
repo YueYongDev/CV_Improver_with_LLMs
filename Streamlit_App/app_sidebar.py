@@ -1,108 +1,84 @@
 import streamlit as st
 
-from app_constants import list_Assistant_Languages, list_LLM_providers
+from app_constants import list_Assistant_Languages, list_LLM_providers, LLM_CONFIGS
 
 
-def expander_model_parameters(
-    LLM_provider="OpenAI",
-    text_input_API_key="OpenAI API Key - [Get an API key](https://platform.openai.com/account/api-keys)",
-    list_models=["gpt-3.5-turbo-0125", "gpt-3.5-turbo", "gpt-4-turbo-preview"],
-    openai_api_key="",
-    google_api_key="",
-):
-    """Add a text_input (for the API key) and a streamlit expander with models and parameters."""
+def expander_model_parameters(LLM_provider, api_key, config):
+    """动态添加 API Key 和模型参数的 Streamlit 界面"""
+    # 初始化默认值
+    st.session_state.setdefault("LLM_provider", LLM_provider)
+    st.session_state.setdefault("temperature", 0.7)
+    st.session_state.setdefault("top_p", 0.95)
+    st.session_state.setdefault("selected_model", config["models"][0])
 
-    st.session_state.LLM_provider = LLM_provider
+    # API Key 输入框
+    st.session_state.api_key = st.text_input(
+        f"{config['api_key_label']} - [Get an API key]({config['api_key_link']})",
+        value=api_key,
+        type="password",
+        placeholder="Insert your API key",
+    )
 
-    if LLM_provider == "OpenAI":
-        st.session_state.openai_api_key = st.text_input(
-            text_input_API_key,
-            value=openai_api_key,
-            type="password",
-            placeholder="insert your API key",
-        )
-
-    if LLM_provider == "Google":
-        st.session_state.google_api_key = st.text_input(
-            text_input_API_key,
-            type="password",
-            value=google_api_key,
-            placeholder="insert your API key",
-        )
-
-    with st.expander("**Models and parameters**"):
+    # 模型选择和参数配置
+    with st.expander("**Models and parameters**", expanded=False):
         st.session_state.selected_model = st.selectbox(
-            f"Choose {LLM_provider} model", list_models
+            f"Choose {LLM_provider} model", config["models"]
         )
-        # model parameters
         st.session_state.temperature = st.slider(
-            "temperature",
+            "Temperature",
             min_value=0.1,
             max_value=1.0,
-            value=0.7,
+            value=st.session_state.temperature,
             step=0.1,
         )
         st.session_state.top_p = st.slider(
-            "top_p",
+            "Top-p",
             min_value=0.1,
             max_value=1.0,
-            value=0.95,
+            value=st.session_state.top_p,
             step=0.05,
         )
 
 
-def sidebar(openai_api_key, google_api_key, cohere_api_key):
-    """Create the sidebar."""
-
+def sidebar(openai_api_key, zhipu_api_key, qwen_api_key, deepseek_api_key):
+    """创建侧边栏"""
     with st.sidebar:
-        st.caption(
-            "🚀 A resume scanner powered by 🔗 Langchain, OpenAI and Google Generative AI"
-        )
+        st.caption("🚀 A resume scanner powered by 🔗 Langchain")
         st.write("")
 
+        # 提供商选择绑定到 session_state.LLM_provider
+        st.session_state.setdefault("LLM_provider", list_LLM_providers[0])
         llm_chooser = st.radio(
             "Select provider",
             list_LLM_providers,
-            captions=[
-                "[OpenAI pricing page](https://openai.com/pricing)",
-                "Rate limit: 60 requests per minute.",
-            ],
+            index=list_LLM_providers.index(st.session_state.LLM_provider),
+            key="LLM_provider",
         )
 
         st.divider()
-        if llm_chooser == list_LLM_providers[0]:
-            expander_model_parameters(
-                LLM_provider="OpenAI",
-                text_input_API_key="OpenAI API Key - [Get an API key](https://platform.openai.com/account/api-keys)",
-                list_models=[
-                    "gpt-3.5-turbo-0125",
-                    "gpt-3.5-turbo",
-                    "gpt-4-turbo-preview",
-                ],
-                openai_api_key=openai_api_key,
-                google_api_key=google_api_key,
-            )
 
-        if llm_chooser == list_LLM_providers[1]:
-            expander_model_parameters(
-                LLM_provider="Google",
-                text_input_API_key="Google API Key - [Get an API key](https://makersuite.google.com/app/apikey)",
-                list_models=["gemini-pro"],
-                openai_api_key=openai_api_key,
-                google_api_key=google_api_key,
-            )
+        # 动态加载提供商的参数界面
+        if llm_chooser in LLM_CONFIGS:
+            config = LLM_CONFIGS[llm_chooser]
+            api_key = {
+                "OpenAI": openai_api_key,
+                "ZhiPu": zhipu_api_key,
+                "Qwen": qwen_api_key,
+                "DeepSeek": deepseek_api_key,
+            }.get(llm_chooser, "")
+            expander_model_parameters(llm_chooser, api_key, config)
 
-        # Cohere API Key
-        st.write("")
-        st.session_state.cohere_api_key = st.text_input(
-            "Coher API Key - [Get an API key](https://dashboard.cohere.com/api-keys)",
-            type="password",
-            value=cohere_api_key,
-            placeholder="insert your API key",
-        )
+        # # Cohere API Key
+        # st.write("")
+        # st.session_state.cohere_api_key = st.text_input(
+        #     "Coher API Key - [Get an API key](https://dashboard.cohere.com/api-keys)",
+        #     type="password",
+        #     value="",
+        #     placeholder="insert your API key",
+        # )
 
-        # Assistant language
+        # 助手语言选择
         st.divider()
         st.session_state.assistant_language = st.selectbox(
-            f"Assistant language", list_Assistant_Languages
+            "Assistant language", list_Assistant_Languages
         )

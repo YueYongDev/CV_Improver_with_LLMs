@@ -1,5 +1,6 @@
+import warnings
+
 import streamlit as st
-import json, warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -53,10 +54,10 @@ def extract_from_text(text, start_tag, end_tag=None):
     """
     start_index = text.find(start_tag)
     if end_tag is None:
-        extacted_txt = text[start_index + len(start_tag) :]
+        extacted_txt = text[start_index + len(start_tag):]
     else:
         end_index = text.find(end_tag)
-        extacted_txt = text[start_index + len(start_tag) : end_index]
+        extacted_txt = text[start_index + len(start_tag): end_index]
 
     return extacted_txt
 
@@ -80,7 +81,7 @@ def convert_text_to_list_of_dicts(text, dict_keys):
 
             for j in range(len(dict_keys) - 1):
                 key_value = extract_from_text(
-                    text_splitted[i], f'"{dict_keys[j]}": ', f'"{dict_keys[j+1]}": '
+                    text_splitted[i], f'"{dict_keys[j]}": ', f'"{dict_keys[j + 1]}": '
                 )
                 key_value = key_value[: key_value.rfind(",\n")].strip()[1:-1]
                 dict_i[dict_keys[j]] = key_value
@@ -96,11 +97,11 @@ def get_current_time():
 
 
 def invoke_LLM(
-    llm,
-    documents,
-    resume_sections: list,
-    info_message="",
-    language="english",
+        llm,
+        documents,
+        resume_sections: list,
+        info_message="",
+        language="english",
 ):
     """Invoke LLM and get a response.
     Parameters:
@@ -135,15 +136,15 @@ def invoke_LLM(
     response = llm.invoke(prompt)
 
     response_content = response.content[
-        response.content.find("{") : response.content.rfind("}") + 1
-    ]
+                       response.content.find("{"): response.content.rfind("}") + 1
+                       ]
     response_tokens_count = sum(retrieval.tiktoken_tokens([response_content]))
 
     return response_content, response_tokens_count
 
 
 def ResponseContent_Parser(
-    response_content, list_fields, list_rfind, list_exclude_first_car
+        response_content, list_fields, list_rfind, list_exclude_first_car
 ):
     """This is a function for parsing any response_content.
     Parameters:
@@ -188,11 +189,11 @@ def ResponseContent_Parser(
             extracted_value = extract_from_text(
                 response_content,
                 f'"{list_fields_detailed[i][0]}": ',
-                f'"{list_fields_detailed[i+1][0]}":',
+                f'"{list_fields_detailed[i + 1][0]}":',
             )
             extracted_value = extracted_value[
-                : extracted_value.rfind(list_rfind[i])
-            ].strip()
+                              : extracted_value.rfind(list_rfind[i])
+                              ].strip()
             if list_exclude_first_car[i]:
                 extracted_value = extracted_value[1:-1].strip()
             if list_fields_detailed[i][2] is None:
@@ -328,8 +329,8 @@ def Extract_Evaluate_Summary(llm, documents):
         # Invoke LLM
         response = llm.invoke(prompt)
         response_content = response.content[
-            response.content.find("{") : response.content.rfind("}") + 1
-        ]
+                           response.content.find("{"): response.content.rfind("}") + 1
+                           ]
 
         try:
             SUMMARY_EVAL = {}
@@ -441,8 +442,8 @@ def Extract_Education_Language(llm, documents):
             Education_Language_sections["CV__Languages"] = (
                 convert_text_to_list_of_dicts(
                     text=languages[
-                        languages.find("[") + 1 : languages.rfind("]")
-                    ].strip(),
+                         languages.find("[") + 1: languages.rfind("]")
+                         ].strip(),
                     dict_keys=["spoken__language", "language__fluency"],
                 )
             )
@@ -450,8 +451,8 @@ def Extract_Education_Language(llm, documents):
             Education_Language_sections["CV__Education"] = (
                 convert_text_to_list_of_dicts(
                     text=education[
-                        education.find("[") + 1 : education.rfind("]")
-                    ].strip(),
+                         education.find("[") + 1: education.rfind("]")
+                         ].strip(),
                     dict_keys=[
                         "edu__college",
                         "edu__degree",
@@ -526,21 +527,21 @@ def Extract_Skills_and_Certifications(llm, documents):
                 skill.strip()[1:-1] for skill in skills.split(",\n")
             ]
             try:
-                score_skills_int = int(score_skills[0 : score_skills.rfind(",\n")])
+                score_skills_int = int(score_skills[0: score_skills.rfind(",\n")])
             except:
                 score_skills_int = -1
             SKILLS_and_CERTIF["Skills__evaluation"] = {
                 "score__skills": score_skills_int,
                 "evaluation__skills": evaluation_skills[
-                    : evaluation_skills.rfind("}\n")
-                ].strip()[1:-1],
+                                      : evaluation_skills.rfind("}\n")
+                                      ].strip()[1:-1],
             }
 
             # Convert certificate text to list of dictionaries
             list_certifs = convert_text_to_list_of_dicts(
                 text=certif_text[
-                    certif_text.find("[") + 1 : certif_text.rfind("]")
-                ].strip(),  # .strip()[1:-1]
+                     certif_text.find("[") + 1: certif_text.rfind("]")
+                     ].strip(),  # .strip()[1:-1]
                 dict_keys=[
                     "certif__title",
                     "certif__organization",
@@ -551,14 +552,14 @@ def Extract_Skills_and_Certifications(llm, documents):
             )
             SKILLS_and_CERTIF["CV__Certifications"] = list_certifs
             try:
-                certif_score_int = int(certif_score[0 : certif_score.rfind(",\n")])
+                certif_score_int = int(certif_score[0: certif_score.rfind(",\n")])
             except:
                 certif_score_int = -1
             SKILLS_and_CERTIF["Certif__evaluation"] = {
                 "score__certif": certif_score_int,
                 "evaluation__certif": certif_eval[: certif_eval.rfind("}\n")].strip()[
-                    1:-1
-                ],
+                                      1:-1
+                                      ],
             }
 
     except Exception as exception:
@@ -607,8 +608,8 @@ def Extract_PROFESSIONAL_EXPERIENCE(llm, documents):
             PROFESSIONAL_EXPERIENCE = {}
             PROFESSIONAL_EXPERIENCE["Work__experience"] = convert_text_to_list_of_dicts(
                 text=work_experiences[
-                    work_experiences.find("[") + 1 : work_experiences.rfind("]")
-                ].strip()[1:-1],
+                     work_experiences.find("[") + 1: work_experiences.rfind("]")
+                     ].strip()[1:-1],
                 dict_keys=[
                     "job__title",
                     "job__company",
@@ -617,9 +618,9 @@ def Extract_PROFESSIONAL_EXPERIENCE(llm, documents):
                 ],
             )
             PROFESSIONAL_EXPERIENCE["CV__Projects"] = convert_text_to_list_of_dicts(
-                text=projects[projects.find("[") + 1 : projects.rfind("]")].strip()[
-                    1:-1
-                ],
+                text=projects[projects.find("[") + 1: projects.rfind("]")].strip()[
+                     1:-1
+                     ],
                 dict_keys=[
                     "project__title",
                     "project__start_date",
@@ -648,41 +649,39 @@ def Extract_PROFESSIONAL_EXPERIENCE(llm, documents):
 
 
 def get_relevant_documents(query, documents):
-    """Retreieve most relevant documents from Langchain documents using the CoherRerank retriever."""
+    """Retrieve most relevant documents from Langchain documents using the retriever."""
+    try:
+        retrieved_docs = st.session_state.retriever.get_relevant_documents(query)
 
-    # 1.1. Retrieve documents using the CohereRerank retriever
+        # 提取 `relevance_score`，默认值为 0
+        relevance_scores = [
+            doc.metadata.get("relevance_score", 0) for doc in retrieved_docs
+        ]
 
-    retrieved_docs = st.session_state.retriever.get_relevant_documents(query)
+        if not relevance_scores:  # 如果没有有效的分数
+            return []
 
-    # 1.2. Keep only relevant documents where relevance_score >= (max(relevance_scores) - 0.1)
+        max_relevance_score = max(relevance_scores)
+        threshold = max_relevance_score - 0.1
 
-    relevance_scores = [
-        retrieved_docs[j].metadata["relevance_score"]
-        for j in range(len(retrieved_docs))
-    ]
-    max_relevance_score = max(relevance_scores)
-    threshold = max_relevance_score - 0.1
+        relevant_doc_ids = []
+        for j, doc in enumerate(retrieved_docs):
+            score = doc.metadata.get("relevance_score", 0)
+            if score >= threshold:
+                relevant_doc_ids.append(doc.metadata["doc_number"])
 
-    relevant_doc_ids = []
+        # 添加下一个文档编号（如果存在）
+        if relevant_doc_ids:
+            relevant_doc_ids.append(min(relevant_doc_ids[0] + 1, len(documents) - 1))
 
-    for j in range(len(retrieved_docs)):
+        # 排序并去重
+        relevant_doc_ids = sorted(set(relevant_doc_ids))
 
-        # keep relevant documents with (relevance_score >= threshold)
+        return [documents[k] for k in relevant_doc_ids]
 
-        if retrieved_docs[j].metadata["relevance_score"] >= threshold:
-            # Append the retrieved document
-            relevant_doc_ids.append(retrieved_docs[j].metadata["doc_number"])
-
-    # Append the next document to the most relevant document, as relevant information may be split between two documents.
-    relevant_doc_ids.append(min(relevant_doc_ids[0] + 1, len(documents) - 1))
-
-    # Sort document ids
-    relevant_doc_ids = sorted(set(relevant_doc_ids))
-
-    # Get the most relevant documents
-    relevant_documents = [documents[k] for k in relevant_doc_ids]
-
-    return relevant_documents
+    except Exception as error:
+        st.error(f"get_relevant_documents error: {error}")
+        return []
 
 
 def Extract_Job_Responsibilities(llm, documents, PROFESSIONAL_EXPERIENCE):
@@ -716,8 +715,8 @@ all the duties and responsibilities of the following work experience: \
             # 2. Invoke LLM
 
             prompt = (
-                query
-                + f"""Output the duties in a json dictionary with the following keys (__duty_id__,__duty__). \
+                    query
+                    + f"""Output the duties in a json dictionary with the following keys (__duty_id__,__duty__). \
 Use this format: "1":"duty","2":"another duty".
 Resume:\n\n ```{relevant_documents}```"""
             )
@@ -725,8 +724,8 @@ Resume:\n\n ```{relevant_documents}```"""
 
             # 3. Convert the response content to json dict and update work_experience
             response_content = response.content[
-                response.content.find("{") : response.content.rfind("}") + 1
-            ]
+                               response.content.find("{"): response.content.rfind("}") + 1
+                               ]
 
             try:
                 Work_experience_i["work__duties"] = json.loads(
@@ -739,7 +738,7 @@ Resume:\n\n ```{relevant_documents}```"""
                 Work_experience_i["work__duties"] = {}
                 list_duties = (
                     response_content[
-                        response_content.find("{") + 1 : response_content.rfind("}")
+                    response_content.find("{") + 1: response_content.rfind("}")
                     ]
                     .strip()
                     .split(",\n")
@@ -747,11 +746,11 @@ Resume:\n\n ```{relevant_documents}```"""
 
                 for j in range(len(list_duties)):
                     try:
-                        Work_experience_i["work__duties"][f"{j+1}"] = (
+                        Work_experience_i["work__duties"][f"{j + 1}"] = (
                             list_duties[j].split('":')[1].strip()[1:-1]
                         )
                     except:
-                        Work_experience_i["work__duties"][f"{j+1}"] = "unknown"
+                        Work_experience_i["work__duties"][f"{j + 1}"] = "unknown"
 
         except Exception as exception:
             Work_experience_i["work__duties"] = {}
@@ -788,8 +787,8 @@ def Extract_Project_Details(llm, documents, PROFESSIONAL_EXPERIENCE):
             # 2. Invoke LLM
 
             prompt = (
-                query
-                + f"""Format the extracted text into a string (with bullet points).
+                    query
+                    + f"""Format the extracted text into a string (with bullet points).
 Resume:\n\n ```{relevant_documents}```"""
             )
 
@@ -848,8 +847,8 @@ def improve_work_experience(WORK_EXPERIENCE: list, llm):
             # ('Score__WorkExperience','Comments__WorkExperience','Improvement__WorkExperience')
 
             response_content = response_content[
-                response_content.find("{") : response_content.rfind("}") + 1
-            ]
+                               response_content.find("{"): response_content.rfind("}") + 1
+                               ]
 
             try:
                 list_fields = [
@@ -923,8 +922,8 @@ def improve_projects(PROJECTS: list, llm):
             # ('Score__project','Comments__project','Improvement__project')
 
             response_content = response_content[
-                response_content.find("{") : response_content.rfind("}") + 1
-            ]
+                               response_content.find("{"): response_content.rfind("}") + 1
+                               ]
 
             try:
                 list_fields = [
@@ -994,8 +993,8 @@ the resume's top 3 strengths and top 3 weaknesses..."
         # Invoke LLM
         response = llm.invoke(prompt)
         response_content = response.content[
-            response.content.find("{") : response.content.rfind("}") + 1
-        ]
+                           response.content.find("{"): response.content.rfind("}") + 1
+                           ]
         try:
             RESUME_EVALUATION = json.loads(response_content)
         except Exception as e:

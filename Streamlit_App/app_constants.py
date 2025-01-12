@@ -1,25 +1,48 @@
 from pathlib import Path
-import os
 
 # 1. Constants
 
-list_LLM_providers = [":rainbow[**OpenAI**]", "**Google Generative AI**"]
-
+# deepseek 暂不支持embedding
+# list_LLM_providers = ["OpenAI", "ZhiPu", "Qwen", "DeepSeek"]
+list_LLM_providers = ["OpenAI", "ZhiPu", "Qwen"]
 list_Assistant_Languages = [
+    "chinese",
     "english",
     "french",
     "spanish",
     "german",
     "russian",
-    "chinese",
     "arabic",
     "portuguese",
     "italian",
     "Japanese",
 ]
 
-TMP_DIR = Path(__file__).resolve().parent.joinpath("data", "tmp")
+# 默认的模型配置
+LLM_CONFIGS = {
+    "OpenAI": {
+        "api_key_label": "OpenAI API Key",
+        "api_key_link": "https://platform.openai.com/account/api-keys",
+        "models": ["gpt-3.5-turbo", "gpt-4o", "gpt-4o-mini"],
+    },
+    "ZhiPu": {
+        "api_key_label": "ZhiPu API Key",
+        "api_key_link": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys",
+        "models": ["glm-4-flash", "glm-4-plus"],
+    },
+    "Qwen": {
+        "api_key_label": "Qwen API Key",
+        "api_key_link": "https://bailian.console.aliyun.com/?apiKey=1#/api-key",
+        "models": ["qwen-long"],
+    },
+    "DeepSeek": {
+        "api_key_label": "DeepSeek API Key",
+        "api_key_link": "https://platform.deepseek.com/api_keys",
+        "models": ["deepseek-chat"],
+    },
+}
 
+TMP_DIR = Path(__file__).resolve().parent.joinpath("data", "tmp")
 
 #  2. PROMPT TEMPLATES
 
@@ -159,7 +182,6 @@ templates[
 2. Evaluate (in three sentences and in {language}) the certifications and the quality of the text.
 3. Format your response as a dictionary with the following keys: score__certif,evaluation__certif.
 """
-
 
 # 3. PROMPTS
 

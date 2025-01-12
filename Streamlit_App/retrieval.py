@@ -1,36 +1,28 @@
 # Streamlit
-import streamlit as st
-
-# document loader
-from langchain_community.document_loaders import PDFMinerLoader
-
-# text_splitter
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-# Cohere reranker
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import CohereRerank
-from langchain_community.llms import Cohere
-
-# Embeddings
-from langchain_openai import OpenAIEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-
-# FAISS vector database
-from langchain_community.vectorstores import FAISS
-
 # Other libraries
-import os, glob, datetime
-from pathlib import Path
-import tiktoken
+import glob
+import os
 import warnings
 
-warnings.filterwarnings("ignore", category=FutureWarning)
-
+import streamlit as st
+import tiktoken
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import EmbeddingsFilter
+# document loader
+from langchain_community.document_loaders import PDFMinerLoader
+from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_community.embeddings import ZhipuAIEmbeddings
+# FAISS vector database
+from langchain_community.vectorstores import FAISS
+# Embeddings
+from langchain_openai import OpenAIEmbeddings
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Data Directories: where temp files and vectorstores will be saved
 from app_constants import TMP_DIR
 
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 def langchain_document_loader(file_path):
     """Load and split a PDF file in Langchain.
@@ -98,12 +90,16 @@ def select_embeddings_model(LLM_service="OpenAI"):
     """Select the Embeddings model: OpenAIEmbeddings or GoogleGenerativeAIEmbeddings."""
 
     if LLM_service == "OpenAI":
-        embeddings = OpenAIEmbeddings(api_key=st.session_state.openai_api_key)
-
-    if LLM_service == "Google":
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001", google_api_key=st.session_state.google_api_key
-        )
+        embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key)
+    if LLM_service == "ZhiPu":
+        embeddings = ZhipuAIEmbeddings(model="embedding-3", api_key=st.session_state.api_key)
+    if LLM_service == "Qwen":
+        embeddings = DashScopeEmbeddings(model="text-embedding-v2", dashscope_api_key=st.session_state.api_key)
+    # deepseek 暂不支持embedding
+    # if LLM_service == "DeepSeek":
+    #     embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key,
+    #                                   base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    #                                   model="text-embedding-v1")
 
     return embeddings
 
@@ -116,7 +112,7 @@ def create_vectorstore(embeddings, documents):
 
 
 def Vectorstore_backed_retriever(
-    vectorstore, search_type="similarity", k=4, score_threshold=None
+        vectorstore, search_type="similarity", k=4, score_threshold=None
 ):
     """create a vectorsore-backed retriever
     Parameters:
@@ -137,25 +133,64 @@ def Vectorstore_backed_retriever(
     return retriever
 
 
-def CohereRerank_retriever(
-    base_retriever, cohere_api_key, cohere_model="rerank-multilingual-v2.0", top_n=4
-):
-    """Build a ContextualCompressionRetriever using Cohere Rerank endpoint to reorder the results based on relevance.
-    Parameters:
-       base_retriever: a Vectorstore-backed retriever
-       cohere_api_key: the Cohere API key
-       cohere_model: The Cohere model can be either 'rerank-english-v2.0' or 'rerank-multilingual-v2.0', with the latter being the default.
-       top_n: top n results returned by Cohere rerank, default = 4.
-    """
+def OpenAIEmbeddings_retriever(base_retriever, api_provider="OpenAI", api_key=None, top_n=4):
+    # 根据选择的提供者初始化 OpenAIEmbeddings
+    embeddings = select_embeddings_model(api_provider)
+    # 使用 embeddings 创建压缩器
+    compressor = EmbeddingsFilter(embeddings=embeddings, top_k=top_n)
 
-    compressor = CohereRerank(
-        cohere_api_key=cohere_api_key, model=cohere_model, top_n=top_n
-    )
-
-    retriever_Cohere = ContextualCompressionRetriever(
+    # 创建一个基于 ContextualCompression 的检索器
+    retriever_openai = ContextualCompressionRetriever(
         base_compressor=compressor, base_retriever=base_retriever
     )
-    return retriever_Cohere
+    return retriever_openai
+
+
+def Tfidf_Rerank_retriever(base_retriever, documents, top_n=4):
+    """
+    使用 TF-IDF 和余弦相似度进行重新打分的 Retriever。
+
+    参数:
+        - base_retriever: 基础向量检索器（例如 FAISS）。
+        - documents: 原始文档列表 (langchain.schema.Document 类型)。
+        - top_n (int): 返回的文档数量，默认为 4。
+
+    输出:
+        - retriever: 一个基于 TF-IDF 重新打分的 ContextualCompressionRetriever。
+    """
+
+    class TfidfCompressor:
+        def __init__(self, top_n):
+            self.top_n = top_n
+
+        def compress(self, documents, query):
+            """基于 TF-IDF 和余弦相似度重新打分文档"""
+            contents = [doc.page_content for doc in documents]
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(contents + [query])
+
+            # 计算查询向量与文档向量的余弦相似度
+            query_vector = tfidf_matrix[-1]
+            doc_vectors = tfidf_matrix[:-1]
+            scores = cosine_similarity(doc_vectors, query_vector)
+
+            # 给文档添加得分并排序
+            for i, doc in enumerate(documents):
+                doc.metadata["relevance_score"] = scores[i][0]
+
+            # 排序并返回 top_n 个文档
+            sorted_docs = sorted(documents, key=lambda x: x.metadata["relevance_score"], reverse=True)
+            return sorted_docs[:self.top_n]
+
+    # 初始化 TF-IDF 压缩器
+    compressor = TfidfCompressor(top_n=top_n)
+
+    # 创建 ContextualCompressionRetriever
+    retriever = ContextualCompressionRetriever(
+        base_compressor=compressor, base_retriever=base_retriever
+    )
+
+    return retriever
 
 
 def retrieval_main():
@@ -188,12 +223,15 @@ def retrieval_main():
             base_retriever = Vectorstore_backed_retriever(
                 st.session_state.vector_store, "similarity", k=min(4, len(documents))
             )
-            st.session_state.retriever = CohereRerank_retriever(
+
+            # 7. Use OpenAI Embeddings for reranking
+            st.session_state.retriever = OpenAIEmbeddings_retriever(
                 base_retriever=base_retriever,
-                cohere_api_key=st.session_state.cohere_api_key,
-                cohere_model="rerank-multilingual-v2.0",
+                api_provider=st.session_state.LLM_provider,
+                api_key=st.session_state.api_key,
                 top_n=min(2, len(documents)),
             )
+
         except Exception as error:
             st.error(f"An error occured:\n {error}")
 
