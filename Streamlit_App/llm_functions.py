@@ -73,7 +73,7 @@ def instantiate_LLM(
         llm = ChatOpenAI(
             api_key=api_key,
             model=model_name,
-            base_url="https://api.deepseek.com/v1",
+            base_url="https://api.deepseek.com",
             temperature=temperature,
             model_kwargs={"top_p": top_p},
         )
@@ -85,7 +85,6 @@ def instantiate_LLM(
             temperature=0.8,
             num_predict=256,
         )
-
     return llm
 
 

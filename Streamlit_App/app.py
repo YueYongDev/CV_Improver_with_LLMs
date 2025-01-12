@@ -35,15 +35,11 @@ def main():
                     st.error("No documents available for analysis.")
                     return
 
-                print(5)
-                print(st.session_state.llm)
-                print(st.session_state.llm_creative)
                 st.session_state.SCANNED_RESUME = resume_analyzer_main(
                     llm=st.session_state.llm,
                     llm_creative=st.session_state.llm_creative,
                     documents=st.session_state.documents,
                 )
-                print(6)
 
                 # 5. Display results
                 display_resume_analysis(st.session_state.SCANNED_RESUME)

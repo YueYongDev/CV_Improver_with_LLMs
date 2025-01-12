@@ -99,10 +99,7 @@ def select_embeddings_model(LLM_service="OpenAI"):
         embeddings = OllamaEmbeddings(model="nomic-embed-text")
     # deepseek 暂不支持embedding
     # if LLM_service == "DeepSeek":
-    #     embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key,
-    #                                   base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-    #                                   model="text-embedding-v1")
-
+    #     embeddings = DashScopeEmbeddings(model="text-embedding-v2", dashscope_api_key='sk-9cc8d47328e04d98a7ca430505b6a59c')
     return embeddings
 
 

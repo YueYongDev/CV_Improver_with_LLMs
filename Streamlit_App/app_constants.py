@@ -33,7 +33,7 @@ LLM_CONFIGS = {
     "Qwen": {
         "api_key_label": "Qwen API Key",
         "api_key_link": "https://bailian.console.aliyun.com/?apiKey=1#/api-key",
-        "models": ["qwen-long"],
+        "models": ["qwen-turbo", "qwen-long", "qwen-plus", "qwen-max"],
     },
     "DeepSeek": {
         "api_key_label": "DeepSeek API Key",
@@ -43,7 +43,7 @@ LLM_CONFIGS = {
     "Ollama": {
         "api_key_label": "Ollama Model List",
         "api_key_link": "https://ollama.com/",
-        "models": ["qwen2.5"],
+        "models": ["phi4", "qwen2.5:14b", "llama3.2-vision", "qwen2.5"],
     },
 }
 
