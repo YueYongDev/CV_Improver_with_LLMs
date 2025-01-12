@@ -43,7 +43,7 @@ def expander_model_parameters(LLM_provider, api_key, config):
 def sidebar(openai_api_key, zhipu_api_key, qwen_api_key, deepseek_api_key):
     """创建侧边栏"""
     with st.sidebar:
-        st.caption("🚀 A resume scanner powered by 🔗 Langchain")
+        st.caption("🚀 A resume analysis tool powered by 🔗 Langchain")
         st.write("")
 
         # 提供商选择绑定到 session_state.LLM_provider
@@ -65,17 +65,9 @@ def sidebar(openai_api_key, zhipu_api_key, qwen_api_key, deepseek_api_key):
                 "ZhiPu": zhipu_api_key,
                 "Qwen": qwen_api_key,
                 "DeepSeek": deepseek_api_key,
+                "Ollama": "deepseek_api_key",
             }.get(llm_chooser, "")
             expander_model_parameters(llm_chooser, api_key, config)
-
-        # # Cohere API Key
-        # st.write("")
-        # st.session_state.cohere_api_key = st.text_input(
-        #     "Coher API Key - [Get an API key](https://dashboard.cohere.com/api-keys)",
-        #     type="password",
-        #     value="",
-        #     placeholder="insert your API key",
-        # )
 
         # 助手语言选择
         st.divider()

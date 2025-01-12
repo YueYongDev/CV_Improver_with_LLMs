@@ -35,11 +35,15 @@ def main():
                     st.error("No documents available for analysis.")
                     return
 
+                print(5)
+                print(st.session_state.llm)
+                print(st.session_state.llm_creative)
                 st.session_state.SCANNED_RESUME = resume_analyzer_main(
                     llm=st.session_state.llm,
                     llm_creative=st.session_state.llm_creative,
                     documents=st.session_state.documents,
                 )
+                print(6)
 
                 # 5. Display results
                 display_resume_analysis(st.session_state.SCANNED_RESUME)
@@ -50,8 +54,8 @@ def main():
 
 if __name__ == "__main__":
     # 1. Set app configuration
-    st.set_page_config(page_title="Resume Scanner", page_icon="🚀")
-    st.title("🔎 Resume Scanner")
+    st.set_page_config(page_title="Resume Analyst", page_icon="🚀")
+    st.title("🔎 Resume Analyst")
 
     # 2. Initialize session states
     st.session_state.setdefault("temperature", 0.7)

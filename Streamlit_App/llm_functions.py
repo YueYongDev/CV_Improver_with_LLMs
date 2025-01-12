@@ -3,6 +3,7 @@ import os
 import streamlit as st
 # dotenv and os
 from dotenv import load_dotenv, find_dotenv
+from langchain_ollama import ChatOllama
 # LLM: openai
 from langchain_openai import ChatOpenAI
 
@@ -76,6 +77,14 @@ def instantiate_LLM(
             temperature=temperature,
             model_kwargs={"top_p": top_p},
         )
+    if LLM_provider == "Ollama":
+        llm = ChatOllama(
+            api_key=api_key,
+            base_url="https://ollama.liangyueyong.cn",
+            model=model_name,
+            temperature=0.8,
+            num_predict=256,
+        )
 
     return llm
 
@@ -115,6 +124,14 @@ def instantiate_LLM_main(temperature, top_p):
         elif st.session_state.LLM_provider == "DeepSeek":
             llm = instantiate_LLM(
                 "DeepSeek",
+                api_key=st.session_state.api_key,
+                temperature=temperature,
+                top_p=top_p,
+                model_name=st.session_state.selected_model,
+            )
+        elif st.session_state.LLM_provider == "Ollama":
+            llm = instantiate_LLM(
+                "Ollama",
                 api_key=st.session_state.api_key,
                 temperature=temperature,
                 top_p=top_p,

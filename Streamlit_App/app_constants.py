@@ -4,7 +4,7 @@ from pathlib import Path
 
 # deepseek 暂不支持embedding
 # list_LLM_providers = ["OpenAI", "ZhiPu", "Qwen", "DeepSeek"]
-list_LLM_providers = ["OpenAI", "ZhiPu", "Qwen"]
+list_LLM_providers = ["OpenAI", "ZhiPu", "Qwen", "Ollama"]
 list_Assistant_Languages = [
     "chinese",
     "english",
@@ -39,6 +39,11 @@ LLM_CONFIGS = {
         "api_key_label": "DeepSeek API Key",
         "api_key_link": "https://platform.deepseek.com/api_keys",
         "models": ["deepseek-chat"],
+    },
+    "Ollama": {
+        "api_key_label": "Ollama Model List",
+        "api_key_link": "https://ollama.com/",
+        "models": ["qwen2.5"],
     },
 }
 

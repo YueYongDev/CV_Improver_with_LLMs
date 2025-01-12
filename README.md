@@ -1,4 +1,4 @@
-# 🔎 Resume scanner: 🚀 Leverage the power of LLM to improve your resume
+# 🔎 Resume Analyst: 🚀 Leverage the power of LLM to improve your resume
 
 ### 🚀 Build a Streamlit application powered by Langchain, OpenAI and Google Generative AI
 

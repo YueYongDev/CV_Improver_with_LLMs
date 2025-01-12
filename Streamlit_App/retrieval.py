@@ -15,14 +15,14 @@ from langchain_community.embeddings import ZhipuAIEmbeddings
 # FAISS vector database
 from langchain_community.vectorstores import FAISS
 # Embeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 # Data Directories: where temp files and vectorstores will be saved
 from app_constants import TMP_DIR
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 def langchain_document_loader(file_path):
     """Load and split a PDF file in Langchain.
@@ -95,6 +95,8 @@ def select_embeddings_model(LLM_service="OpenAI"):
         embeddings = ZhipuAIEmbeddings(model="embedding-3", api_key=st.session_state.api_key)
     if LLM_service == "Qwen":
         embeddings = DashScopeEmbeddings(model="text-embedding-v2", dashscope_api_key=st.session_state.api_key)
+    if LLM_service == "Ollama":
+        embeddings = OllamaEmbeddings(model="nomic-embed-text")
     # deepseek 暂不支持embedding
     # if LLM_service == "DeepSeek":
     #     embeddings = OpenAIEmbeddings(api_key=st.session_state.api_key,
@@ -146,53 +148,6 @@ def OpenAIEmbeddings_retriever(base_retriever, api_provider="OpenAI", api_key=No
     return retriever_openai
 
 
-def Tfidf_Rerank_retriever(base_retriever, documents, top_n=4):
-    """
-    使用 TF-IDF 和余弦相似度进行重新打分的 Retriever。
-
-    参数:
-        - base_retriever: 基础向量检索器（例如 FAISS）。
-        - documents: 原始文档列表 (langchain.schema.Document 类型)。
-        - top_n (int): 返回的文档数量，默认为 4。
-
-    输出:
-        - retriever: 一个基于 TF-IDF 重新打分的 ContextualCompressionRetriever。
-    """
-
-    class TfidfCompressor:
-        def __init__(self, top_n):
-            self.top_n = top_n
-
-        def compress(self, documents, query):
-            """基于 TF-IDF 和余弦相似度重新打分文档"""
-            contents = [doc.page_content for doc in documents]
-            vectorizer = TfidfVectorizer()
-            tfidf_matrix = vectorizer.fit_transform(contents + [query])
-
-            # 计算查询向量与文档向量的余弦相似度
-            query_vector = tfidf_matrix[-1]
-            doc_vectors = tfidf_matrix[:-1]
-            scores = cosine_similarity(doc_vectors, query_vector)
-
-            # 给文档添加得分并排序
-            for i, doc in enumerate(documents):
-                doc.metadata["relevance_score"] = scores[i][0]
-
-            # 排序并返回 top_n 个文档
-            sorted_docs = sorted(documents, key=lambda x: x.metadata["relevance_score"], reverse=True)
-            return sorted_docs[:self.top_n]
-
-    # 初始化 TF-IDF 压缩器
-    compressor = TfidfCompressor(top_n=top_n)
-
-    # 创建 ContextualCompressionRetriever
-    retriever = ContextualCompressionRetriever(
-        base_compressor=compressor, base_retriever=base_retriever
-    )
-
-    return retriever
-
-
 def retrieval_main():
     """Create a Langchain retrieval, which includes document loaders to upload the resume,
     embeddings to create a numerical representation of the text, FAISS vector database to store the embeddings,
@@ -212,7 +167,6 @@ def retrieval_main():
 
         # 4. Embeddings
         embeddings = select_embeddings_model(st.session_state.LLM_provider)
-
         # 5. Create a Faiss vector database
         try:
             st.session_state.vector_store = create_vectorstore(
