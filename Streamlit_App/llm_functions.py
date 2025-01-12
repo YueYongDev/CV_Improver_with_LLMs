@@ -98,11 +98,9 @@ def instantiate_LLM_main(temperature, top_p):
             llm = instantiate_LLM(
                 "OpenAI",
                 api_key=st.session_state.api_key,
-                # api_key="sk-9cc8d47328e04d98a7ca430505b6a59c",
                 temperature=temperature,
                 top_p=top_p,
                 model_name=st.session_state.selected_model,
-                # model_name="qwen-turbo",
             )
         elif st.session_state.LLM_provider == "ZhiPu":
             llm = instantiate_LLM(
